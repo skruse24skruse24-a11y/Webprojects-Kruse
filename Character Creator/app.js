@@ -20,6 +20,14 @@
   const frame = document.getElementById("viewport-frame");
   const nameInput = document.getElementById("glyph-name");
 
+  // Cache static NodeLists — DOM structure never changes after load, so we
+  // query once and reuse on every sync() instead of calling querySelectorAll
+  // four times per render cycle.
+  const _fillPanels     = [...document.querySelectorAll("[data-fill-for]")];
+  const _bgPanels       = [...document.querySelectorAll("[data-bg-for]")];
+  const _bgAdjustNodes  = [...document.querySelectorAll("[data-bg-adjust-for]")];
+  const _classTicks     = [...document.querySelectorAll(".class-tick")];
+
   const CLASS_STOPS = [0, 125, 250, 375, 500, 625, 750, 875, 1000];
   const CLASS_NAMES = [
     "Unknown",
@@ -61,6 +69,10 @@
   }
 
   let lastValidGlyph = "A";
+  /** True while a batch control update is in progress; suppresses cascading sync() calls. */
+  let _batchUpdate = false;
+  /** Caches the last buildHalftoneSvg() result to avoid re-encoding an unchanged SVG on every sync(). */
+  let _halftoneCache = null;
 
   function setLetterChar(c) {
     if (!letter) return;
@@ -168,13 +180,13 @@
       const steps = Math.max(40, Math.ceil(tileW * 2));
       const extend = bandW;  // extra length past each edge
       const totalW = tileW + 2 * extend;
-      let d = "";
+      const pts = [];
       for (let i = 0; i <= steps; i += 1) {
         const x = -extend + (i / steps) * totalW;
         const dy = waveAmp * Math.sin((2 * Math.PI * x) / tileW);
-        d += `${i === 0 ? "M" : "L"}${x.toFixed(2)},${(cy + dy).toFixed(2)}`;
+        pts.push(`${i === 0 ? "M" : "L"}${x.toFixed(2)},${(cy + dy).toFixed(2)}`);
       }
-      stripeContent = `<path d="${d}" stroke="${patternColor}" stroke-width="${bandW}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+      stripeContent = `<path d="${pts.join("")}" stroke="${patternColor}" stroke-width="${bandW}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
     }
 
     // Expand fill to cover corners when rotated
@@ -208,7 +220,7 @@
     const startX = -spacing;
     const startY = -spacing;
 
-    let content = "";
+    const segments = [];
     for (let j = 0; j < rows; j += 1) {
       for (let i = 0; i < cols; i += 1) {
         const hash1 = dotHash2(i, j, seed);
@@ -224,12 +236,12 @@
         const sizeMultiplier = sizeVar > 0 ? (1 - sizeVar + sizeVar * 2 * hash3) : 1;
         const r = baseR * sizeMultiplier;
 
-        content += backdropDotShapeSvg(shape, cx, cy, r, patternColor);
+        segments.push(backdropDotShapeSvg(shape, cx, cy, r, patternColor));
       }
     }
 
     return `<rect width="100%" height="100%" fill="${baseColor}"/>
-    ${content}`;
+    ${segments.join("")}`;
   }
 
   /** Generate inline-SVG content for a grid backdrop (straight or wavy lines). */
@@ -255,27 +267,24 @@
       // combine to form complete lines at boundaries (prevents clipping gaps)
       const steps = Math.max(30, Math.ceil(cell * 2));
       // Horizontal wavy lines at y=0 and y=cell
-      let dH0 = "";
-      let dHC = "";
+      const pH0 = [], pHC = [], pV0 = [], pVC = [];
       for (let i = 0; i <= steps; i += 1) {
         const x = (i / steps) * cell;
         const dy = waveAmp * Math.sin((2 * Math.PI * x) / cell);
-        dH0 += `${i === 0 ? "M" : "L"}${x.toFixed(2)},${dy.toFixed(2)}`;
-        dHC += `${i === 0 ? "M" : "L"}${x.toFixed(2)},${(cell + dy).toFixed(2)}`;
+        pH0.push(`${i === 0 ? "M" : "L"}${x.toFixed(2)},${dy.toFixed(2)}`);
+        pHC.push(`${i === 0 ? "M" : "L"}${x.toFixed(2)},${(cell + dy).toFixed(2)}`);
       }
       // Vertical wavy lines at x=0 and x=cell
-      let dV0 = "";
-      let dVC = "";
       for (let i = 0; i <= steps; i += 1) {
         const y = (i / steps) * cell;
         const dx = waveAmp * Math.sin((2 * Math.PI * y) / cell);
-        dV0 += `${i === 0 ? "M" : "L"}${dx.toFixed(2)},${y.toFixed(2)}`;
-        dVC += `${i === 0 ? "M" : "L"}${(cell + dx).toFixed(2)},${y.toFixed(2)}`;
+        pV0.push(`${i === 0 ? "M" : "L"}${dx.toFixed(2)},${y.toFixed(2)}`);
+        pVC.push(`${i === 0 ? "M" : "L"}${(cell + dx).toFixed(2)},${y.toFixed(2)}`);
       }
-      patternContent = `<path d="${dH0}" stroke="${patternColor}" stroke-width="${sw}" fill="none"/>
-          <path d="${dHC}" stroke="${patternColor}" stroke-width="${sw}" fill="none"/>
-          <path d="${dV0}" stroke="${patternColor}" stroke-width="${sw}" fill="none"/>
-          <path d="${dVC}" stroke="${patternColor}" stroke-width="${sw}" fill="none"/>`;
+      patternContent = `<path d="${pH0.join("")}" stroke="${patternColor}" stroke-width="${sw}" fill="none"/>
+          <path d="${pHC.join("")}" stroke="${patternColor}" stroke-width="${sw}" fill="none"/>
+          <path d="${pV0.join("")}" stroke="${patternColor}" stroke-width="${sw}" fill="none"/>
+          <path d="${pVC.join("")}" stroke="${patternColor}" stroke-width="${sw}" fill="none"/>`;
     }
 
     return `<defs>
@@ -411,7 +420,7 @@
     if (n1) n1.value = String(Math.round(clamp(Number(p1), 0, 100)));
     if (n2) n2.value = String(Math.round(clamp(Number(p2), 0, 100)));
     if (n3) n3.value = String(Math.round(clamp(Number(p3), 0, 100)));
-    updateGradRailUi();
+    // updateGradRailUi() removed — sync() always follows at every call site
   }
 
   function readGradStopPercents() {
@@ -429,7 +438,7 @@
     if (n1) n1.value = String(Math.round(clamp(Number(p1), 0, 100)));
     if (n2) n2.value = String(Math.round(clamp(Number(p2), 0, 100)));
     if (n3) n3.value = String(Math.round(clamp(Number(p3), 0, 100)));
-    updateBgGradRailUi();
+    // updateBgGradRailUi() removed — sync() always follows at every call site
   }
 
   function readBgGradStopPercents() {
@@ -628,6 +637,9 @@
   }
 
   function buildHalftoneSvg(cDot, cCell, dotR, cell, shape, gridAngle, brickPct) {
+    const key = `${cDot}|${cCell}|${dotR}|${cell}|${shape}|${gridAngle}|${brickPct}`;
+    if (_halftoneCache && _halftoneCache.key === key) return _halftoneCache.result;
+
     const rot = Number(gridAngle) || 0;
     const brick = clamp(Number(brickPct) || 0, 0, 100);
     const sc = Math.max(6, Math.round(cell * 100) / 100);
@@ -658,7 +670,9 @@
     if (bx1 - dr < 0) g += mkDot(bx1 + W, (3 * sc) / 2);
     if (bx2 - dr < 0) g += mkDot(bx2 + W, (3 * sc) / 2);
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="100%" height="100%" fill="${cCell}"/>${g}</svg>`;
-    return { url: svgUrl(svg), w: W, h: H };
+    const result = { url: svgUrl(svg), w: W, h: H };
+    _halftoneCache = { key, result };
+    return result;
   }
 
   /**
@@ -765,7 +779,7 @@
   }
 
   function updateFillPanels() {
-    document.querySelectorAll("[data-fill-for]").forEach((panel) => {
+    _fillPanels.forEach((panel) => {
       const modes = (panel.getAttribute("data-fill-for") || "").trim().split(/\s+/);
       const show = modes.some((m) => isFillModeOn(m));
       panel.toggleAttribute("hidden", !show);
@@ -774,12 +788,12 @@
 
   function updateBgSubpanels() {
     const mode = getSelectedBackdropMode();
-    document.querySelectorAll("[data-bg-for]").forEach((panel) => {
+    _bgPanels.forEach((panel) => {
       const modes = (panel.getAttribute("data-bg-for") || "").trim().split(/\s+/);
       const show = modes.includes(mode);
       panel.toggleAttribute("hidden", !show);
     });
-    document.querySelectorAll("[data-bg-adjust-for]").forEach((node) => {
+    _bgAdjustNodes.forEach((node) => {
       const modes = (node.getAttribute("data-bg-adjust-for") || "").trim().split(/\s+/);
       node.toggleAttribute("hidden", !modes.includes(mode));
     });
@@ -1117,7 +1131,7 @@
     }
 
     const activeStops = multi ? classBracketStops(v) : [nearestClassStop(Number(inp.value))];
-    document.querySelectorAll(".class-tick").forEach((tick) => {
+    _classTicks.forEach((tick) => {
       const stop = Number(tick.getAttribute("data-stop"));
       tick.classList.toggle("is-active", activeStops.includes(stop));
     });
@@ -2368,6 +2382,7 @@
   function bindFillUi() {
     document.querySelectorAll('input[name="letter-fill-mode"]').forEach((inp) => {
       inp.addEventListener("change", () => {
+        if (_batchUpdate) return;
         markCustom();
         updateFillPanels();
         updateGradientFieldsVisibility();
@@ -2380,16 +2395,22 @@
     const bp = el("base-preset");
     if (bp) {
       bp.addEventListener("change", () => {
+        // applyPresetData sets radio buttons which can cascade sync() calls;
+        // suppress those and do one deliberate sync() at the end.
+        _batchUpdate = true;
         applyUserPreset(bp.value);
+        _batchUpdate = false;
         sync();
       });
     }
-    el("class-multiclass")?.addEventListener("change", () => { markCustom(); sync(); });
+    // Note: class-multiclass is already covered by the listenIds loop
+    // (both 'input' and 'change' registered there). No duplicate needed here.
   }
 
   function bindBackdropUi() {
     document.querySelectorAll('input[name="backdrop-mode"]').forEach((inp) => {
       inp.addEventListener("change", () => {
+        if (_batchUpdate) return;
         markCustom();
         updateBgSubpanels();
         sync();
@@ -2416,8 +2437,12 @@
 
   function bindRandomizeButton() {
     el("base-randomize")?.addEventListener("click", () => {
+      // Suppress event-driven sync() calls triggered by rRadio() setting .checked;
+      // run exactly one deliberate sync() after all values are set.
+      _batchUpdate = true;
       markCustom();
       randomizeAllOptions();
+      _batchUpdate = false;
       sync();
     });
   }
@@ -2468,7 +2493,6 @@
     if (multiclass) multiclass.checked = Math.random() < 0.3;
     // Skew towards center using average of two randoms (triangle distribution), then mirror for balance
     const skewBase = Math.round(((Math.random() + Math.random()) / 2 - 0.5) * 2 * 35);
-    const skewSign = skewBase >= 0 ? 1 : -1;
     const skewYOffset = Math.round((Math.random() * 0.3 - 0.15) * 30); // small variance ±15% of max
     rEl("css-skew", Math.max(-35, Math.min(35, skewBase)));
     rEl("css-skew-y", Math.max(-30, Math.min(30, -skewBase + skewYOffset)));
@@ -2562,7 +2586,9 @@
     // Dots
     rSelect("backdrop-dots-shape");
     rEl("backdrop-dots-radius", rInt(1, 60));
-    rEl("backdrop-dots-spacing", rInt(4, 120));
+    // Floor at 20 to prevent pathological SVG counts (4px spacing ≈ 15 000 shapes
+    // per frame; the slider still allows 4 manually for deliberate use).
+    rEl("backdrop-dots-spacing", rInt(20, 120));
     rEl("backdrop-dots-size-var", rInt(0, 100));
     rEl("backdrop-dots-row-stagger", rInt(0, 100));
     rEl("backdrop-dots-col-stagger", rInt(0, 100));
@@ -2574,38 +2600,25 @@
     rEl("backdrop-grid-line", rInt(1, 20));
     rEl("backdrop-grid-rotate", rInt(0, 90));
     rEl("backdrop-grid-wave", rInt(0, 50));
-
-    updateValueDisplays();
+    // updateValueDisplays() removed — sync() handles this immediately after
   }
 
   /** Convert font file to base64 data URL (cached). */
   let _fontDataUrl = null;
   async function getFontDataUrl() {
     if (_fontDataUrl) return _fontDataUrl;
-    const fontPaths = [
-      "CharacterCreatorFonts/CharacterCreatorV2-VF.ttf",
-      "CharacterCreator/Variable-TT/CharacterCreatorV2-VF.ttf"
-    ];
-
-    for (const fontPath of fontPaths) {
-      try {
-        const resp = await fetch(fontPath);
-        if (!resp.ok) {
-          continue;
-        }
-        const buf = await resp.arrayBuffer();
-        const bytes = new Uint8Array(buf);
-        let binary = "";
-        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-        _fontDataUrl = "data:font/truetype;base64," + btoa(binary);
-        return _fontDataUrl;
-      } catch (e) {
-        // Try the next path.
-      }
+    try {
+      const resp = await fetch("CharacterCreator/Variable-TT/CharacterCreatorV2-VF.ttf");
+      const buf = await resp.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      _fontDataUrl = "data:font/truetype;base64," + btoa(binary);
+      return _fontDataUrl;
+    } catch (e) {
+      console.error("Font fetch failed:", e);
+      return null;
     }
-
-    console.error("Font fetch failed: no valid font path found");
-    return null;
   }
 
   /** Deep-clone a DOM element with all computed styles inlined. */
