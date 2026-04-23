@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <title>Assassination history</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Girassol&family=Nunito+Sans:wght@400;600;700&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="https://use.typekit.net/kyf4iac.css">
+    <link rel="stylesheet" href="../webprojectstyles.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" src="js/chart.js"></script>
+</head>
+
+<body>
+    <a class="home-icon-btn" href="../index.html" aria-label="Go to home page" title="Home">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 3 3 10h2v10h5v-6h4v6h5V10h2z"></path>
+        </svg>
+    </a>
+    <div id="selection-header">
+        <div class="range-title mainTitle" data-range="0">
+            <img src="img/Title.svg" alt="Assassination History Title">
+            <div>Although records are unreliable
+                until the 20th century, it is clear that assassination has been a tool for nearly all of recorded
+                history. By charting the rise of political killings, the consequences of more efficient weapons and
+                tumultuous political landscapes in the modern era are put into stark contrast.</div>
+        </div>
+        <div class="range-title" data-range="1">
+            <div class="era-name">Ancient Egypt</div>
+            <div class="era-focus">The oldest surviving records of Assassination</div>
+        </div>
+        <div class="range-title" data-range="2">
+            <div class="era-name">The Roman Empire</div>
+        </div>
+        <div class="range-title" data-range="3">
+            <div class="era-name">Medieval Europe</div>
+        </div>
+        <div class="range-title" data-range="4,5">
+            <div class="era-name">Medieval Scandinavia</div>
+        </div>
+        <div class="range-title" data-range="6">
+            <div class="era-name">The United States</div>
+        </div>
+        <div class="range-title" data-range="7">
+            <div class="era-name">World War I and II</div>
+        </div>
+        <div class="range-title" data-range="8">
+            <div class="era-name">Late 20th Century to Present</div>
+        </div>
+        <div class="range-title data-viz" data-range="9">
+            <h1 class="viz-title">The Evolution of Political Murder</h1>
+            <div class="flex-container">
+                <div class="flex-item"></div>
+                <div class="flex-item">2000 BCE
+                    to 1000 CE</div>
+                <div class="flex-item">1000 CE
+                    to 1800 CE</div>
+                <div class="flex-item">1800 CE
+                    to 1900 CE</div>
+                <div class="flex-item">1900 CE
+                    to 1950 CE</div>
+                <div class="flex-item">1950 CE
+                    to 2025 CE</div>
+            </div>
+            <div class="flex-container">
+                <div class="flex-item legend">
+                    <div class="legend-item sword-blade">Sword/Blade</div>
+                    <div class="legend-item firearm">Firearm</div>
+                    <div class="legend-item other">Other</div>
+                </div>
+                <div class="flex-item"><img src="img/2000bce.svg" alt="2000 BCE to 1000 CE"></div>
+                <div class="flex-item"><img src="img/1000ce.svg" alt="1000 CE to 1800 CE"></div>
+                <div class="flex-item"><img src="img/1800ce.svg" alt="1800 CE to 1900 CE"></div>
+                <div class="flex-item"><img src="img/1900ce.svg" alt="1900 CE to 1950 CE"></div>
+                <div class="flex-item"><img src="img/1950ce.svg" alt="1950 CE to 2025 CE"></div>
+            </div>
+            <div class="flex-container">
+                <div class="flex-item legend">
+                    <div class="legend-item royalty">Royalty/Nobility</div>
+                    <div class="legend-item military">Military</div>
+                    <div class="legend-item religious">Religious</div>
+                    <div class="legend-item government">Government</div>
+                    <div class="legend-item revolutionary">Revolutionary/Activist</div>
+                    <div class="legend-item political">Political</div>
+                    <div class="legend-item professional">Professional</div>
+                </div>
+                <div class="flex-item"><img src="img/2000bce2.svg" alt="2000 BCE to 1000 CE"></div>
+                <div class="flex-item"><img src="img/1000ce2.svg" alt="1000 CE to 1800 CE"></div>
+                <div class="flex-item"><img src="img/1800ce2.svg" alt="1800 CE to 1900 CE"></div>
+                <div class="flex-item"><img src="img/1900ce2.svg" alt="1900 CE to 1950 CE"></div>
+                <div class="flex-item"><img src="img/1950ce2.svg" alt="1950 CE to 2025 CE"></div>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    <div id="chart_div"></div>
+
+    <div id="nav">
+        <button id="prevBtn"></button>
+        <button class="optBtn" title="Range 1" aria-label="Range 1"></button>
+        <button class="optBtn" title="Range 2" aria-label="Range 2"></button>
+        <button class="optBtn" title="Range 3" aria-label="Range 3"></button>
+        <button class="optBtn" title="Range 4" aria-label="Range 4"></button>
+        <button class="optBtn" title="Range 5" aria-label="Range 5"></button>
+        <button class="optBtn" title="Range 6" aria-label="Range 6"></button>
+        <button class="optBtn" title="Range 7" aria-label="Range 7"></button>
+        <button class="optBtn" title="Range 8" aria-label="Range 8"></button>
+        <button class="optBtn" title="Range 9" aria-label="Range 9"></button>
+        <button class="optBtn" title="Range 10" aria-label="Range 10"></button>
+
+        <button id="nextBtn"></button>
+    </div>
+
+</body>
+
+</html>

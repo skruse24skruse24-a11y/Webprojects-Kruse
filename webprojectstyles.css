@@ -1,0 +1,26 @@
+.home-icon-btn {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #fef3e1;
+    border: 2px solid #e65c5c;
+    display: grid;
+    place-items: center;
+    z-index: 3000;
+    text-decoration: none;
+    transition: transform .15s ease, border-color .15s ease;
+}
+
+.home-icon-btn:hover {
+    border-color: #711919;
+    transform: translateY(-1px);
+}
+
+.home-icon-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: #711919;
+}

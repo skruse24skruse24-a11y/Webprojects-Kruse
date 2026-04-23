@@ -1,0 +1,128 @@
+{
+  "project": "Character Creator MVP Webpage",
+  "author": "Sam Kruse",
+  "description": "A variable font character preview tool. Users manipulate a single glyph (currently only 'A') via sliders controlling font variation axes, CSS transforms, fill patterns, and background styling. The final result can be exported as a PNG or emailed.",
+
+  "system_interactions": {
+    "html_to_css": [
+      "index.html links styles.css via <link rel='stylesheet'>",
+      "CSS custom properties in :root (--font-glyph, --bg, --surface, --accent, etc.) theme the entire UI",
+      "Class names from HTML (.app-shell, .preview-column, .controls-column, .control-group, .fill-subpanel, .bg-subpanel, .finalize-overlay, etc.) map directly to CSS layout/styling rules",
+      "The .mvp-hidden class is used on HTML elements to hide unfinished features via CSS 'display:none!important'",
+      "data-fill-for and data-bg-for attributes on HTML panels are toggled hidden/shown by JS, with CSS handling their visual state",
+      "The .viewport-letter element is styled with var(--font-glyph) which loads the @font-face 'Character Creator' variable font",
+      "Container queries (container-type:size on .viewport-frame) dynamically size .viewport-letter font-size via cqh/cqw units",
+      "SVG filter #filter-letter-age defined inline in HTML is referenced by CSS filter property applied via JS",
+      "The .body-primary-sliders block overrides dark-themed slider styles for the light-panel Class/Weight area",
+      "Gradient stop rail (.grad-stops-rail, .grad-stop-handle) styled in CSS, positioned dynamically via inline styles from JS"
+    ],
+    "html_to_js": [
+      "app.js loaded via <script src='app.js' defer> at bottom of body",
+      "html2canvas loaded from CDN <script> before app.js for PNG export",
+      "All control inputs have id attributes that app.js references via document.getElementById()",
+      "The glyph-name input drives letter preview via beforeinput/input/paste event handlers in bindGlyphName()",
+      "Radio buttons name='letter-fill-mode' determine fill rendering mode (solid/gradient/bar-stripes/halftone/mesh)",
+      "Radio buttons name='backdrop-mode' determine background type (none/gradient/image/stripes/dots/grid)",
+      "The finalize overlay (id='finalize-overlay') is toggled hidden/shown by JS click handlers",
+      "SVG filter element id='fe-age-displace' has its 'scale' attribute dynamically set by JS based on the age slider",
+      "Hidden inputs (fill-grad-p1/p2/p3, bg-grad-p1/p2/p3) store gradient stop percentages managed by JS drag logic"
+    ],
+    "css_to_js": [
+      "JS directly manipulates element.style properties: fontVariationSettings, transform, filter, color, backgroundColor, backgroundImage, backgroundSize, opacity, webkitTextStroke, webkitBackgroundClip, webkitTextFillColor, paintOrder, textShadow",
+      "JS reads computed styles (getComputedStyle) to clone the preview into the finalize modal",
+      "JS toggles CSS classes: name-input--error, name-input--pulse, is-active (on class ticks)",
+      "JS toggles the 'hidden' attribute on data-fill-for, data-bg-for, and data-bg-adjust-for panels",
+      "CSS animation name-input-error-pulse is triggered by JS adding/removing the name-input--pulse class"
+    ],
+    "js_internal_systems": [
+      "sync() is the central render loop — called on every input/change event, updates all visual state",
+      "Preset system: serializePreset() snapshots all control values; applyPresetData() restores them; stored in localStorage under 'char-creator-presets-v1'",
+      "Font variation axes (THIC, VARI) are formatted into font-variation-settings CSS string by formatVariationSettings()",
+      "Class system: VARI axis snaps to 9 named stops (Unknown/Luck/Charisma/etc.) unless multiclass checkbox is on",
+      "Fill system: buildClipFill() generates background-image/size/position for text clipping (gradient/bar-stripes/halftone/mesh)",
+      "Backdrop system: buildBackdropPattern() generates tiling SVG/CSS patterns; applyPreviewBackdrop() applies them to viewport-frame",
+      "Gradient stop rails: pointer drag handlers on .grad-stop-handle buttons update hidden input values and re-render"
+    ],
+    "font_system": [
+      "@font-face loads CharacterCreator/Variable-TT/CharacterCreatorV2-VF.ttf as a variable TrueType font",
+      "Two variation axes used: THIC (thickness/weight, 0-1000) and VARI (variation/class, 0-1000)",
+      "tools/fvar-dump.mjs is a Node utility for dumping font variation axis info"
+    ]
+  },
+
+  "commented_out_code": [ 
+    {
+      "file": "index.html",
+      "location": "lines ~744-748, inside .finalize-actions",
+      "content": "<!--<p class='finalize-hint' id='finalize-hint'>Email uses a server endpoint. Set <code>window.CHARACTER_MAIL_ENDPOINT</code>...</p>-->",
+      "purpose": "Help text explaining how to configure the email endpoint. Commented out likely to reduce UI clutter."
+    }
+  ],
+
+  "non_functioning_or_incomplete_features": [
+    {
+      "feature": "Export font / Email send",
+      "files": ["app.js", "index.html"],
+      "details": "The 'Send image by email' button (id='finalize-send-email') is wired up but requires window.CHARACTER_MAIL_ENDPOINT to be set to a server URL. No such endpoint exists in the project. Without it, clicking the button just shows 'Set window.CHARACTER_MAIL_ENDPOINT to your API URL, or download the PNG and attach it manually.' The associated hint paragraph is also commented out in HTML.",
+      "status": "stub_implementation_no_backend"
+    },
+    {
+      "feature": "Image backdrop mode",
+      "files": ["index.html", "app.js"],
+      "details": "The 'Image' radio option under Background is wrapped in class 'mvp-hidden' (display:none). The entire bg-subpanel[data-bg-for='image'] is also marked 'mvp-hidden'. JS code for resolving image URLs (resolveBackdropImageUrl), applying image backdrops, and the BUILTIN_BACKDROP_IMAGES object all exist and are functional, but the UI is hidden from users.",
+      "status": "implemented_but_hidden"
+    },
+    {
+      "feature": "Backdrop image URL override note",
+      "files": ["index.html"],
+      "details": "A <p class='control-note mvp-hidden'> explaining window.BACKDROP_IMAGE_URLS is hidden.",
+      "status": "implemented_but_hidden"
+    },
+    {
+      "feature": "Dev preset bar",
+      "files": ["index.html", "app.js"],
+      "details": "The dev-preset-bar (id='dev-preset-bar') for authoring/saving presets is marked 'mvp-hidden'. JS code (bindDevPresetBar, saveCurrentPreset, etc.) is fully wired but the UI is invisible.",
+      "status": "implemented_but_hidden"
+    },
+    {
+      "feature": "Backdrop dots advanced controls (stagger, jitter, seed)",
+      "files": ["index.html"],
+      "details": "Row stagger, Column stagger, Position jitter, and Jitter seed sliders for backdrop dots are wrapped in a div with class 'mvp-hidden'. The JS reads these values (buildBackdropDotsSvg) and they affect rendering, but the UI is hidden.",
+      "status": "implemented_but_hidden"
+    },
+    {
+      "feature": "Gender slider",
+      "files": ["index.html", "app.js"],
+      "details": "The 'Gender' slider (id='base-gender') exists in the HTML and its value display is updated, but it has no effect on any rendering. It is not mapped to any font variation axis, CSS property, or visual output in app.js. The sync() function does not read or use its value for anything beyond displaying the number.",
+      "status": "ui_present_no_effect"
+    },
+    {
+      "feature": "Glyph roster limited to 'A'",
+      "files": ["app.js"],
+      "details": "ALLOWED_GLYPHS is Set(['A']). The code comments state 'Roster will expand to 6 capitals; this build only ships A.' Any other letter typed into the Name field is rejected with an error message.",
+      "status": "intentionally_limited_for_mvp"
+    },
+    {
+      "feature": "Age slider visual effect (SVG displacement)",
+      "files": ["index.html", "app.js"],
+      "details": "The Age slider (id='base-age') drives an SVG feTurbulence + feDisplacementMap filter. The filter is applied via CSS filter:'url(#filter-letter-age)'. This works but the effect is subtle — at age=0 the displacement scale is 0, and at age=100 it reaches scale=14. The filter is functional.",
+      "status": "functional"
+    },
+    {
+      "feature": "Download PNG",
+      "files": ["app.js", "index.html"],
+      "details": "The 'Download PNG' button uses html2canvas (loaded from CDN) to capture the finalize-viewport and trigger a .png blob download. This is functional assuming html2canvas loads successfully from the CDN.",
+      "status": "functional_with_external_dependency"
+    }
+  ],
+
+  "mvp_hidden_elements_summary": {
+    "description": "The CSS class 'mvp-hidden' (display:none!important) is used to hide features not ready for the MVP release. All hidden features have backing JS logic that would work if shown.",
+    "hidden_items": [
+      "Dev preset authoring bar (id='dev-preset-bar')",
+      "Image backdrop radio option and its subpanel",
+      "BACKDROP_IMAGE_URLS override note",
+      "Backdrop dots advanced controls (stagger, jitter, seed)"
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+EMAIL SETUP INSTRUCTIONS — Character Creator
+=============================================
+
+The app expects window.CHARACTER_MAIL_ENDPOINT — a server URL that accepts
+a POST with { email, imageBase64, glyph } and sends the email.
+
+OPTION A: Simple Node.js server with Nodemailer
+------------------------------------------------
+
+1. Create server.js:
+
+    const express = require("express");
+    const nodemailer = require("nodemailer");
+    const cors = require("cors");
+    const app = express();
+    app.use(cors());
+    app.use(express.json({ limit: "10mb" }));
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: "your-work-email@gmail.com",
+        pass: "YOUR_APP_PASSWORD",  // NOT your Gmail password — see step 2
+      },
+    });
+
+    app.post("/send", async (req, res) => {
+      const { email, imageBase64, glyph } = req.body;
+      if (!email || !imageBase64) return res.status(400).json({ error: "Missing fields" });
+      const base64Data = imageBase64.replace(/^data:image\/png;base64,/, "");
+      await transporter.sendMail({
+        from: "your-work-email@gmail.com",
+        to: email,
+        subject: `Your Character: ${glyph}`,
+        text: `Here is your character "${glyph}" from Character Creator.`,
+        attachments: [{ filename: `character-${glyph}.png`, content: base64Data, encoding: "base64" }],
+      });
+      res.json({ ok: true });
+    });
+
+    app.listen(3001, () => console.log("Mail server on :3001"));
+
+2. Generate a Gmail App Password (required since Google disabled less-secure-apps):
+   - Go to https://myaccount.google.com/apppasswords
+   - You must have 2-Step Verification enabled
+   - Select "Mail" -> "Other" -> name it "Character Creator"
+   - Copy the 16-character password and use it as YOUR_APP_PASSWORD above
+
+3. Install deps and run:
+   npm init -y
+   npm install express nodemailer cors
+   node server.js
+
+4. Set the endpoint in your webpage (before app.js loads, or in console):
+   <script>window.CHARACTER_MAIL_ENDPOINT = "http://localhost:3001/send";</script>
+
+OPTION B: Serverless (Vercel/Netlify function)
+----------------------------------------------
+Same Nodemailer logic, deployed as a serverless function.
+Use environment variables for the app password instead of hardcoding.
+
+SECURITY NOTE: Never expose your app password in client-side code.
+Keep it server-side only. For production, add rate limiting and input
+validation to the /send endpoint.
