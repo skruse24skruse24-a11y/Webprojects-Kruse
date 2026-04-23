@@ -1,1 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><circle cx="32" cy="32" r="28" fill="#00bfe2"/><text x="32" y="38" text-anchor="middle" font-size="24" font-family="Arial" fill="#fff">P</text></svg>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" width="39.79" height="64.02" viewBox="0 0 39.79 64.02">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #b85858;
+      }
+    </style>
+  </defs>
+  <g id="Layer_1-2" data-name="Layer 1">
+    <path class="cls-1" d="M39.79,44.39c-.13,10.36-8.47,19.07-18.82,19.61-11.47.6-20.97-8.53-20.97-19.86,0-3.18.75-6.19,2.07-8.85-.1.14-.21.29-.31.44L19.66,0l15.16,30.23c.48.96.99,1.92,1.59,2.81,2.18,3.24,3.43,7.14,3.38,11.35Z"/>
+  </g>
+</svg>

@@ -1,15 +1,687 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=index.html">
-    <meta content="width=device-width, initial-scale=1" name="viewport">
-    <title>Character Creator</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Character Creator</title>
+  <link rel="stylesheet" href="../webprojectstyles.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
+<body class="app">
+  <a class="home-icon-btn" href="../index.html" aria-label="Go to home page" title="Home">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 3 3 10h2v10h5v-6h4v6h5V10h2z"></path>
+    </svg>
+  </a>
+  <svg class="svg-filters" aria-hidden="true" focusable="false" width="0" height="0">
+    <defs>
+      <filter id="filter-letter-age" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.07" numOctaves="2" result="noise" seed="11"/>
+        <feDisplacementMap id="fe-age-displace" in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>
+  </svg>
+  <div class="app-shell">
+    <header class="app-header">
+      <h1 class="app-title">Character Creator</h1>
+      <p class="app-subtitle">Web Project by Sam Kruse</p>
+    </header>
 
-<body>
-    <p>Redirecting to Character Creator...</p>
+    <div class="app-body">
+      <section class="preview-column" aria-label="Glyph preview">
+        <div class="stone-frame">
+          <div class="preview-panel">
+            <div class="viewport-frame" id="viewport-frame">
+              <svg class="backdrop-pattern-svg" id="backdrop-pattern-svg" aria-hidden="true"></svg>
+              <span class="viewport-letter" id="viewport-letter">R</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="controls-column" aria-label="Text styling controls">
+        <div class="controls-scroll" id="controls-scroll">
+          <div class="control-group">
+            <h2 class="control-group-title">Base</h2>
+            <div class="control name-control">
+              <label class="control-label" for="glyph-name">Name</label>
+              <input
+                type="text"
+                id="glyph-name"
+                class="name-input"
+                value="R"
+                maxlength="1"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="characters"
+                spellcheck="false"
+                inputmode="text"
+                aria-describedby="name-hint"
+              >
+              <button type="button" id="base-randomize" class="randomize-dice-btn" title="Randomize all">🎲</button>
+            </div>
+            <p class="name-hint" id="name-hint" role="status" aria-live="polite"></p>
+            <label class="control control-select">
+              <span class="control-label">Preset</span>
+              <select id="base-preset" aria-label="Character preset">
+                <option value="custom" selected>Custom</option>
+              </select>
+              <span class="control-value" id="base-preset-value">Custom</span>
+            </label>
+            <label class="control">
+              <span class="control-label">Gender</span>
+              <input type="range" id="base-gender" min="0" max="100" value="50" step="1">
+              <span class="control-value" id="base-gender-value">50</span>
+            </label>
+            <label class="control">
+              <span class="control-label">Age</span>
+              <input type="range" id="base-age" min="0" max="100" value="0" step="1">
+              <span class="control-value" id="base-age-value">0</span>
+            </label>
+            <label class="control">
+              <span class="control-label">Size</span>
+              <input type="range" id="base-size" min="50" max="200" value="100" step="5">
+              <span class="control-value" id="base-size-value">100%</span>
+            </label>
+            <label class="control">
+              <span class="control-label">Move X</span>
+              <input type="range" id="base-pos-x" min="20" max="80" value="50" step="1">
+              <span class="control-value" id="base-pos-x-value">50%</span>
+            </label>
+            <label class="control">
+              <span class="control-label">Move Y</span>
+              <input type="range" id="base-pos-y" min="20" max="80" value="50" step="1">
+              <span class="control-value" id="base-pos-y-value">50%</span>
+            </label>
+          </div>
+
+          <div class="control-group">
+            <h2 class="control-group-title">Body</h2>
+            <div class="body-primary-sliders">
+              <div class="class-slider-block">
+                <div class="class-range-header class-range-header--with-active">
+                  <span class="class-range-label">Class</span>
+                  <p class="class-active" id="class-active-label" aria-live="polite">—</p>
+                  <span class="control-value class-range-value" id="axis-variation-value">500</span>
+                </div>
+                <input type="range" id="axis-variation" class="class-range-input" min="0" max="1000" value="625" step="1">
+                <div class="class-ticks" aria-hidden="true">
+                  <span class="class-tick" data-stop="0">Unknown</span>
+                  <span class="class-tick" data-stop="125">Luck</span>
+                  <span class="class-tick" data-stop="250">Charisma</span>
+                  <span class="class-tick" data-stop="375">Wisdom</span>
+                  <span class="class-tick" data-stop="500">Strength</span>
+                  <span class="class-tick" data-stop="625">None</span>
+                  <span class="class-tick" data-stop="750">Intelligence</span>
+                  <span class="class-tick" data-stop="875">Constitution</span>
+                  <span class="class-tick" data-stop="1000">Agility</span>
+                </div>
+                <label class="multiclass-row">
+                  <input type="checkbox" id="class-multiclass">
+                  <span>Multiclass</span>
+                </label>
+              </div>
+              <div class="weight-slider-block">
+                <div class="class-range-header">
+                  <span class="class-range-label">Weight</span>
+                  <span class="control-value class-range-value" id="axis-thickness-value">500</span>
+                </div>
+                <input type="range" id="axis-thickness" class="class-range-input" min="0" max="1000" value="0" step="1">
+                <div class="weight-ticks" aria-hidden="true">
+                  <span class="weight-tick">Light</span>
+                  <span class="weight-tick">Medium</span>
+                  <span class="weight-tick">Heavy</span>
+                </div>
+              </div>
+            </div>
+            <label class="control">
+              <span class="control-label">Oblique</span>
+              <input type="range" id="css-skew" min="-35" max="35" value="0" step="1">
+              <span class="control-value" id="css-skew-value">0°</span>
+            </label>
+            <label class="control">
+              <span class="control-label">Balance</span>
+              <input type="range" id="css-skew-y" min="-30" max="30" value="0" step="1">
+              <span class="control-value" id="css-skew-y-value">0°</span>
+            </label>
+          </div>
+
+          <div class="control-group">
+            <h2 class="control-group-title">Color</h2>
+            <fieldset class="fill-options-fieldset">
+              <legend class="visually-hidden">Letter fill type</legend>
+              <div class="fill-options-grid" role="radiogroup" aria-label="Letter fill type">
+                <label class="fill-option-chip">
+                  <input type="radio" name="letter-fill-mode" id="fill-mode-solid" value="solid" checked>
+                  <span>Solid</span>
+                </label>
+                <label class="fill-option-chip">
+                  <input type="radio" name="letter-fill-mode" id="fill-mode-gradient" value="gradient">
+                  <span>Gradient</span>
+                </label>
+                <label class="fill-option-chip">
+                  <input type="radio" name="letter-fill-mode" id="fill-mode-bar-stripes" value="bar-stripes">
+                  <span>Bar stripes</span>
+                </label>
+                <label class="fill-option-chip">
+                  <input type="radio" name="letter-fill-mode" id="fill-mode-halftone" value="halftone">
+                  <span>Halftone</span>
+                </label>
+                <label class="fill-option-chip">
+                  <input type="radio" name="letter-fill-mode" id="fill-mode-mesh" value="mesh">
+                  <span>Mesh</span>
+                </label>
+              </div>
+            </fieldset>
+
+            <div class="fill-subpanel" data-fill-for="bar-stripes halftone mesh" hidden>
+              <label class="control">
+                <span class="control-label">Fill pattern scale</span>
+                <input type="range" id="fill-pattern-scale" min="50" max="900" value="240" step="5">
+                <span class="control-value" id="fill-pattern-scale-value">240%</span>
+              </label>
+            </div>
+
+            <div class="fill-subpanel" data-fill-for="solid">
+              <p class="fill-subpanel-title">Solid fill</p>
+              <label class="control control-color">
+                <span class="control-label" id="text-color-label">Text color</span>
+                <input type="color" id="css-text-color" value="#1a120d">
+                <span class="control-value control-swatch-value" id="css-text-color-value">#1a120d</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Opacity</span>
+                <input type="range" id="fill-opacity-solid" min="0" max="100" value="100" step="1">
+                <span class="control-value" id="fill-opacity-solid-value">100%</span>
+              </label>
+            </div>
+
+            <div class="fill-subpanel" data-fill-for="gradient" hidden>
+              <p class="fill-subpanel-title">Gradient</p>
+              <label class="control control-select">
+                <span class="control-label">Type</span>
+                <select id="fill-grad-type" aria-label="Gradient type">
+                  <option value="linear" selected>Linear</option>
+                  <option value="radial">Radial</option>
+                </select>
+                <span class="control-value" id="fill-grad-type-value">Linear</span>
+              </label>
+              <div id="fill-grad-linear-fields">
+                <label class="control">
+                  <span class="control-label">Direction</span>
+                  <input type="range" id="fill-grad-linear-angle" min="0" max="360" value="145" step="1">
+                  <span class="control-value" id="fill-grad-linear-angle-value">145°</span>
+                </label>
+              </div>
+              <div id="fill-grad-radial-fields" hidden>
+                <label class="control">
+                  <span class="control-label">Center X</span>
+                  <input type="range" id="fill-grad-radial-x" min="0" max="100" value="50" step="1">
+                  <span class="control-value" id="fill-grad-radial-x-value">50%</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Center Y</span>
+                  <input type="range" id="fill-grad-radial-y" min="0" max="100" value="50" step="1">
+                  <span class="control-value" id="fill-grad-radial-y-value">50%</span>
+                </label>
+              </div>
+              <p class="fill-subpanel-title fill-subpanel-title--nested">Colors &amp; stops</p>
+              <div class="grad-stops-editor">
+                <div class="grad-stops-colors" aria-hidden="true">
+                  <label class="grad-stop-color">
+                    <span class="visually-hidden">Color stop 1</span>
+                    <input type="color" id="fill-grad-c1" value="#ffffff" title="Stop 1 color">
+                  </label>
+                  <label class="grad-stop-color">
+                    <span class="visually-hidden">Color stop 2</span>
+                    <input type="color" id="fill-grad-c2" value="#c3ad96" title="Stop 2 color">
+                  </label>
+                  <label class="grad-stop-color">
+                    <span class="visually-hidden">Color stop 3</span>
+                    <input type="color" id="fill-grad-c3" value="#1a120d" title="Stop 3 color">
+                  </label>
+                </div>
+                <div class="grad-stops-rail" id="grad-stops-rail" aria-label="Gradient stop positions; drag handles or click the bar">
+                  <div class="grad-stops-rail-preview" id="grad-stops-preview" aria-hidden="true"></div>
+                  <button type="button" class="grad-stop-handle" id="grad-handle-1" data-stop-index="1" aria-label="Stop 1 position" style="left:0%"></button>
+                  <button type="button" class="grad-stop-handle" id="grad-handle-2" data-stop-index="2" aria-label="Stop 2 position" style="left:45%"></button>
+                  <button type="button" class="grad-stop-handle" id="grad-handle-3" data-stop-index="3" aria-label="Stop 3 position" style="left:100%"></button>
+                </div>
+                <p class="grad-stops-values" id="grad-stops-values" aria-live="polite">0% · 45% · 100%</p>
+              </div>
+              <input type="hidden" id="fill-grad-p1" value="0">
+              <input type="hidden" id="fill-grad-p2" value="45">
+              <input type="hidden" id="fill-grad-p3" value="100">
+              <label class="control">
+                <span class="control-label">Fill opacity</span>
+                <input type="range" id="fill-opacity-gradient" min="0" max="100" value="100" step="1">
+                <span class="control-value" id="fill-opacity-gradient-value">100%</span>
+              </label>
+            </div>
+
+            <div class="fill-subpanel" data-fill-for="bar-stripes" hidden>
+              <p class="fill-subpanel-title">Bar stripes</p>
+              <label class="control">
+                <span class="control-label">Angle</span>
+                <input type="range" id="fill-bar-angle" min="0" max="360" value="90" step="1">
+                <span class="control-value" id="fill-bar-angle-value">90°</span>
+              </label>
+              <label class="control control-color">
+                <span class="control-label">Color A</span>
+                <input type="color" id="fill-bar-c1" value="#ffffff">
+                <span class="control-value control-swatch-value" id="fill-bar-c1-value">#ffffff</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Band A</span>
+                <input type="range" id="fill-bar-w1" min="2" max="24" value="5" step="1">
+                <span class="control-value" id="fill-bar-w1-value">5</span>
+              </label>
+              <label class="control control-color">
+                <span class="control-label">Color B</span>
+                <input type="color" id="fill-bar-c2" value="#c3ad96">
+                <span class="control-value control-swatch-value" id="fill-bar-c2-value">#c3ad96</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Band B</span>
+                <input type="range" id="fill-bar-w2" min="2" max="24" value="5" step="1">
+                <span class="control-value" id="fill-bar-w2-value">5</span>
+              </label>
+              <label class="control control-color">
+                <span class="control-label">Color C</span>
+                <input type="color" id="fill-bar-c3" value="#1a120d">
+                <span class="control-value control-swatch-value" id="fill-bar-c3-value">#1a120d</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Band C</span>
+                <input type="range" id="fill-bar-w3" min="2" max="24" value="5" step="1">
+                <span class="control-value" id="fill-bar-w3-value">5</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Fill opacity</span>
+                <input type="range" id="fill-opacity-bar-stripes" min="0" max="100" value="100" step="1">
+                <span class="control-value" id="fill-opacity-bar-stripes-value">100%</span>
+              </label>
+            </div>
+
+            <div class="fill-subpanel" data-fill-for="halftone" hidden>
+              <p class="fill-subpanel-title">Halftone</p>
+              <label class="control control-select">
+                <span class="control-label">Dot shape</span>
+                <select id="fill-halftone-shape" aria-label="Halftone dot shape">
+                  <option value="circle" selected>Circle</option>
+                  <option value="square">Square</option>
+                  <option value="triangle">Triangle</option>
+                  <option value="star">Star</option>
+                </select>
+                <span class="control-value" id="fill-halftone-shape-value">Circle</span>
+              </label>
+              <label class="control control-color">
+                <span class="control-label">Dot color</span>
+                <input type="color" id="fill-halftone-c1" value="#1a120d">
+                <span class="control-value control-swatch-value" id="fill-halftone-c1-value">#1a120d</span>
+              </label>
+              <label class="control control-color">
+                <span class="control-label">Cell color</span>
+                <input type="color" id="fill-halftone-c2" value="#ffffff">
+                <span class="control-value control-swatch-value" id="fill-halftone-c2-value">#ffffff</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Dot radius</span>
+                <input type="range" id="fill-halftone-dot" min="0.5" max="5" value="1.5" step="0.1">
+                <span class="control-value" id="fill-halftone-dot-value">1.5</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Cell size</span>
+                <input type="range" id="fill-halftone-cell" min="5" max="32" value="10" step="1">
+                <span class="control-value" id="fill-halftone-cell-value">10</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Phase X</span>
+                <input type="range" id="fill-halftone-phase-x" min="0" max="100" value="0" step="1">
+                <span class="control-value" id="fill-halftone-phase-x-value">0%</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Phase Y</span>
+                <input type="range" id="fill-halftone-phase-y" min="0" max="100" value="0" step="1">
+                <span class="control-value" id="fill-halftone-phase-y-value">0%</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Grid angle</span>
+                <input type="range" id="fill-halftone-grid-angle" min="0" max="90" value="0" step="1">
+                <span class="control-value" id="fill-halftone-grid-angle-value">0°</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Brick shift</span>
+                <input type="range" id="fill-halftone-brick" min="0" max="100" value="50" step="1">
+                <span class="control-value" id="fill-halftone-brick-value">50%</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Fill opacity</span>
+                <input type="range" id="fill-opacity-halftone" min="0" max="100" value="100" step="1">
+                <span class="control-value" id="fill-opacity-halftone-value">100%</span>
+              </label>
+            </div>
+
+            <div class="fill-subpanel" data-fill-for="mesh" hidden>
+              <p class="fill-subpanel-title">Mesh tiles</p>
+              <label class="control">
+                <span class="control-label">Tile size</span>
+                <input type="range" id="fill-mesh-tile" min="12" max="80" value="36" step="1">
+                <span class="control-value" id="fill-mesh-tile-value">36</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Line weight</span>
+                <input type="range" id="fill-mesh-line" min="8" max="45" value="25" step="1">
+                <span class="control-value" id="fill-mesh-line-value">25%</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Angle A</span>
+                <input type="range" id="fill-mesh-a1" min="0" max="360" value="135" step="1">
+                <span class="control-value" id="fill-mesh-a1-value">135°</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Angle B</span>
+                <input type="range" id="fill-mesh-a2" min="0" max="360" value="225" step="1">
+                <span class="control-value" id="fill-mesh-a2-value">225°</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Angle C</span>
+                <input type="range" id="fill-mesh-a3" min="0" max="360" value="315" step="1">
+                <span class="control-value" id="fill-mesh-a3-value">315°</span>
+              </label>
+              <label class="control control-color">
+                <span class="control-label">Line A</span>
+                <input type="color" id="fill-mesh-c1" value="#c3ad96">
+                <span class="control-value control-swatch-value" id="fill-mesh-c1-value">#c3ad96</span>
+              </label>
+              <label class="control control-color">
+                <span class="control-label">Line B</span>
+                <input type="color" id="fill-mesh-c2" value="#1a120d">
+                <span class="control-value control-swatch-value" id="fill-mesh-c2-value">#3d2918</span>
+              </label>
+              <label class="control control-color">
+                <span class="control-label">Line C</span>
+                <input type="color" id="fill-mesh-c3" value="#ffffff">
+                <span class="control-value control-swatch-value" id="fill-mesh-c3-value">#ffffff</span>
+              </label>
+              <label class="control control-color">
+                <span class="control-label">Base</span>
+                <input type="color" id="fill-mesh-base" value="#ffffff">
+                <span class="control-value control-swatch-value" id="fill-mesh-base-value">#ffffff</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Fill opacity</span>
+                <input type="range" id="fill-opacity-mesh" min="0" max="100" value="100" step="1">
+                <span class="control-value" id="fill-opacity-mesh-value">100%</span>
+              </label>
+            </div>
+
+            <p class="fill-subpanel-title fill-subpanel-title--nested">Shadow</p>
+            <label class="control">
+              <span class="control-label">Shadow blur</span>
+              <input type="range" id="css-shadow-blur" min="0" max="48" value="0" step="1">
+              <span class="control-value" id="css-shadow-blur-value">0</span>
+            </label>
+            <label class="control">
+              <span class="control-label">Shadow X</span>
+              <input type="range" id="css-shadow-x" min="-40" max="40" value="0" step="1">
+              <span class="control-value" id="css-shadow-x-value">4</span>
+            </label>
+            <label class="control">
+              <span class="control-label">Shadow Y</span>
+              <input type="range" id="css-shadow-y" min="-40" max="40" value="0" step="1">
+              <span class="control-value" id="css-shadow-y-value">4</span>
+            </label>
+          </div>
+
+          <div class="control-group">
+            <h2 class="control-group-title">Background</h2>
+            <fieldset class="fill-options-fieldset">
+              <legend class="visually-hidden">Background type</legend>
+              <div class="fill-options-grid fill-options-grid--dense" role="radiogroup" aria-label="Background type">
+                <label class="fill-option-chip">
+                  <input type="radio" name="backdrop-mode" id="backdrop-mode-none" value="none" checked>
+                  <span>Solid color</span>
+                </label>
+                <label class="fill-option-chip">
+                  <input type="radio" name="backdrop-mode" id="backdrop-mode-gradient" value="gradient">
+                  <span>Gradient</span>
+                </label>
+                <label class="fill-option-chip">
+                  <input type="radio" name="backdrop-mode" id="backdrop-mode-stripes" value="stripes">
+                  <span>Stripes</span>
+                </label>
+                <label class="fill-option-chip">
+                  <input type="radio" name="backdrop-mode" id="backdrop-mode-dots" value="dots">
+                  <span>Dots</span>
+                </label>
+                <label class="fill-option-chip">
+                  <input type="radio" name="backdrop-mode" id="backdrop-mode-grid" value="grid">
+                  <span>Grid</span>
+                </label>
+              </div>
+            </fieldset>
+
+            <div class="bg-subpanel" data-bg-for="none" hidden>
+              <label class="control control-color">
+                <span class="control-label">Background color</span>
+                <input type="color" id="preview-bg-color" value="#ffffff" data-preview-bg-master>
+                <span class="control-value control-swatch-value" id="preview-bg-color-value">#ffffff</span>
+              </label>
+            </div>
+
+            <div class="bg-subpanel" data-bg-for="gradient" hidden>
+              <p class="fill-subpanel-title">Background gradient</p>
+              <label class="control control-color">
+                <span class="control-label">Background color</span>
+                <input type="color" id="preview-bg-color-gradient" value="#ffffff" data-preview-bg-mirror>
+                <span class="control-value control-swatch-value" id="preview-bg-color-gradient-value">#ffffff</span>
+              </label>
+              <label class="control control-select">
+                <span class="control-label">Type</span>
+                <select id="bg-grad-type" aria-label="Background gradient type">
+                  <option value="linear" selected>Linear</option>
+                  <option value="radial">Radial</option>
+                </select>
+                <span class="control-value" id="bg-grad-type-value">Linear</span>
+              </label>
+              <div id="bg-grad-linear-fields">
+                <label class="control">
+                  <span class="control-label">Direction</span>
+                  <input type="range" id="bg-grad-linear-angle" min="0" max="360" value="160" step="1">
+                  <span class="control-value" id="bg-grad-linear-angle-value">160°</span>
+                </label>
+              </div>
+              <div id="bg-grad-radial-fields" hidden>
+                <p class="control-note">Radial uses a circular gradient.</p>
+                <label class="control">
+                  <span class="control-label">Center X</span>
+                  <input type="range" id="bg-grad-radial-x" min="0" max="100" value="50" step="1">
+                  <span class="control-value" id="bg-grad-radial-x-value">50%</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Center Y</span>
+                  <input type="range" id="bg-grad-radial-y" min="0" max="100" value="50" step="1">
+                  <span class="control-value" id="bg-grad-radial-y-value">50%</span>
+                </label>
+              </div>
+              <p class="fill-subpanel-title fill-subpanel-title--nested">Colors &amp; stops</p>
+              <div class="grad-stops-editor">
+                <div class="grad-stops-colors" aria-hidden="true">
+                  <label class="grad-stop-color">
+                    <span class="visually-hidden">Background stop 1</span>
+                    <input type="color" id="bg-grad-c1" value="#ffffff" title="Stop 1 color">
+                  </label>
+                  <label class="grad-stop-color">
+                    <span class="visually-hidden">Background stop 2</span>
+                    <input type="color" id="bg-grad-c2" value="#efe0cc" title="Stop 2 color">
+                  </label>
+                  <label class="grad-stop-color">
+                    <span class="visually-hidden">Background stop 3</span>
+                    <input type="color" id="bg-grad-c3" value="#c3ad96" title="Stop 3 color">
+                  </label>
+                </div>
+                <div class="grad-stops-rail" id="bg-grad-stops-rail" aria-label="Background gradient stop positions">
+                  <div class="grad-stops-rail-preview" id="bg-grad-stops-preview" aria-hidden="true"></div>
+                  <button type="button" class="grad-stop-handle" id="bg-grad-handle-1" data-stop-index="1" aria-label="Background stop 1 position" style="left:0%"></button>
+                  <button type="button" class="grad-stop-handle" id="bg-grad-handle-2" data-stop-index="2" aria-label="Background stop 2 position" style="left:40%"></button>
+                  <button type="button" class="grad-stop-handle" id="bg-grad-handle-3" data-stop-index="3" aria-label="Background stop 3 position" style="left:100%"></button>
+                </div>
+                <p class="grad-stops-values" id="bg-grad-stops-values" aria-live="polite">0% · 40% · 100%</p>
+              </div>
+              <input type="hidden" id="bg-grad-p1" value="0">
+              <input type="hidden" id="bg-grad-p2" value="40">
+              <input type="hidden" id="bg-grad-p3" value="100">
+            </div>
+
+            <div class="bg-subpanel" data-bg-for="stripes dots grid" hidden>
+              <p class="fill-subpanel-title">Pattern</p>
+              <label class="control control-color">
+                <span class="control-label">Background color</span>
+                <input type="color" id="preview-bg-color-pattern" value="#ffffff" data-preview-bg-mirror>
+                <span class="control-value control-swatch-value" id="preview-bg-color-pattern-value">#ffffff</span>
+              </label>
+              <label class="control control-color">
+                <span class="control-label">Accent color</span>
+                <input type="color" id="preview-pattern-color" value="#1a120d">
+                <span class="control-value control-swatch-value" id="preview-pattern-color-value">#1a120d</span>
+              </label>
+              <label class="control">
+                <span class="control-label">Backdrop pattern scale</span>
+                <input type="range" id="backdrop-pattern-scale" min="25" max="300" value="100" step="5">
+                <span class="control-value" id="backdrop-pattern-scale-value">100%</span>
+              </label>
+
+              <div class="backdrop-adjust" data-bg-adjust-for="stripes" hidden>
+                <label class="control">
+                  <span class="control-label">Stripe angle</span>
+                  <input type="range" id="backdrop-stripes-angle" min="-90" max="90" value="-45" step="1">
+                  <span class="control-value" id="backdrop-stripes-angle-value">-45°</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Stripe width</span>
+                  <input type="range" id="backdrop-stripes-band" min="1" max="40" value="4" step="1">
+                  <span class="control-value" id="backdrop-stripes-band-value">4</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Stripe gap</span>
+                  <input type="range" id="backdrop-stripes-gap" min="4" max="80" value="14" step="1">
+                  <span class="control-value" id="backdrop-stripes-gap-value">14</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Wave height</span>
+                  <input type="range" id="backdrop-stripes-wave-amp" min="0" max="50" value="0" step="1">
+                  <span class="control-value" id="backdrop-stripes-wave-amp-value">0</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Wave count</span>
+                  <input type="range" id="backdrop-stripes-wave-freq" min="1" max="20" value="4" step="1">
+                  <span class="control-value" id="backdrop-stripes-wave-freq-value">4</span>
+                </label>
+              </div>
+
+              <div class="backdrop-adjust" data-bg-adjust-for="dots" hidden>
+                <label class="control control-select">
+                  <span class="control-label">Dot shape</span>
+                  <select id="backdrop-dots-shape" aria-label="Backdrop dot shape">
+                    <option value="circle" selected>Circle</option>
+                    <option value="square">Square</option>
+                    <option value="triangle">Triangle</option>
+                    <option value="star">Star</option>
+                    <option value="hex">Hexagon</option>
+                    <option value="diamond">Diamond</option>
+                  </select>
+                  <span class="control-value" id="backdrop-dots-shape-value">Circle</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Dot size</span>
+                  <input type="range" id="backdrop-dots-radius" min="1" max="60" value="5" step="1">
+                  <span class="control-value" id="backdrop-dots-radius-value">5</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Dot spacing</span>
+                  <input type="range" id="backdrop-dots-spacing" min="4" max="120" value="44" step="1">
+                  <span class="control-value" id="backdrop-dots-spacing-value">44</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Size variation</span>
+                  <input type="range" id="backdrop-dots-size-var" min="0" max="100" value="0" step="1">
+                  <span class="control-value" id="backdrop-dots-size-var-value">0%</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Row stagger</span>
+                  <input type="range" id="backdrop-dots-row-stagger" min="0" max="100" value="0" step="1">
+                  <span class="control-value" id="backdrop-dots-row-stagger-value">0%</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Column stagger</span>
+                  <input type="range" id="backdrop-dots-col-stagger" min="0" max="100" value="0" step="1">
+                  <span class="control-value" id="backdrop-dots-col-stagger-value">0%</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Position jitter</span>
+                  <input type="range" id="backdrop-dots-jitter" min="0" max="100" value="0" step="1">
+                  <span class="control-value" id="backdrop-dots-jitter-value">0%</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Jitter seed</span>
+                  <input type="range" id="backdrop-dots-seed" min="0" max="999" value="42" step="1">
+                  <span class="control-value" id="backdrop-dots-seed-value">42</span>
+                </label>
+              </div>
+
+              <div class="backdrop-adjust" data-bg-adjust-for="grid" hidden>
+                <label class="control">
+                  <span class="control-label">Cell size</span>
+                  <input type="range" id="backdrop-grid-cell" min="4" max="200" value="48" step="1">
+                  <span class="control-value" id="backdrop-grid-cell-value">48</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Line weight</span>
+                  <input type="range" id="backdrop-grid-line" min="1" max="20" value="2" step="1">
+                  <span class="control-value" id="backdrop-grid-line-value">2</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Rotation</span>
+                  <input type="range" id="backdrop-grid-rotate" min="0" max="90" value="0" step="1">
+                  <span class="control-value" id="backdrop-grid-rotate-value">0°</span>
+                </label>
+                <label class="control">
+                  <span class="control-label">Grid wave</span>
+                  <input type="range" id="backdrop-grid-wave" min="0" max="50" value="0" step="1">
+                  <span class="control-value" id="backdrop-grid-wave-value">0</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <button type="button" class="finalize-fab" id="finalize-open">Finalize character</button>
+
+  <div class="finalize-overlay" id="finalize-overlay" hidden>
+    <div class="finalize-panel">
+      <div class="finalize-toolbar">
+        <h2 class="finalize-title">Your character</h2>
+        <button type="button" class="finalize-close" id="finalize-close" aria-label="Close">×</button>
+      </div>
+      <div class="finalize-preview-wrap" id="finalize-preview-wrap">
+        <img id="finalize-preview-img" class="finalize-preview-img" alt="Character preview">
+      </div>
+      <div class="finalize-actions">
+        <button type="button" class="finalize-btn finalize-btn-primary" id="finalize-download">Download PNG</button>
+        <label class="finalize-email-label">
+          <span>Email</span>
+          <input type="email" id="finalize-email" class="finalize-email-input" placeholder="you@example.com" autocomplete="email">
+        </label>
+        <button type="button" class="finalize-btn" id="finalize-send-email">Send image by email</button>
+        <p class="finalize-status" id="finalize-status" role="status"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js" defer></script>
 </body>
-
 </html>
