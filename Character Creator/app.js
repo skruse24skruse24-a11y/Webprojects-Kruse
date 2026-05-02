@@ -2663,26 +2663,27 @@
     if (!frame) return null;
     const [fontUrl, fontUrlA] = await Promise.all([getFontDataUrl(), getFontDataUrlA()]);
 
-    // Register fonts in document.fonts via FontFace API and await the load.
-    // foreignObject shares the parent document's FontFace registry, so fonts
-    // loaded this way are immediately available when the SVG is rasterized —
-    // unlike @font-face in an embedded <style>, which triggers a new async
-    // download that img.onload doesn't wait for.
-    async function ensureFontFace(name, url) {
+    // Use unique export-only family names to avoid any conflict with the
+    // CSS-registered fonts of the same name. On GitHub Pages the CSS fonts
+    // may or may not be resident in document.fonts by export time; using fresh
+    // names means we fully own the load and there is no resolution ambiguity.
+    const EXPORT_FAMILY   = "__cc_export__";
+    const EXPORT_FAMILY_A = "__cc_export_a__";
+
+    async function preloadExportFont(exportName, url) {
       if (!url) return;
       try {
-        const ff = new FontFace(name, `url("${url}")`);
+        const ff = new FontFace(exportName, `url("${url}")`);
         await ff.load();
         document.fonts.add(ff);
       } catch (e) {
-        console.warn("FontFace load failed for", name, e);
+        console.warn("Export font preload failed:", exportName, e);
       }
     }
     await Promise.all([
-      ensureFontFace("Character Creator",   fontUrl),
-      ensureFontFace("Character Creator A", fontUrlA),
+      preloadExportFont(EXPORT_FAMILY,   fontUrl),
+      preloadExportFont(EXPORT_FAMILY_A, fontUrlA),
     ]);
-    await document.fonts.ready;
 
     const rect = frame.getBoundingClientRect();
     const w = snapW || Math.round(rect.width);
@@ -2698,11 +2699,18 @@
     clone.style.removeProperty("container-type");
     clone.style.removeProperty("container-name");
 
-    // font-variation-settings is often not enumerated by getComputedStyle iteration,
-    // so explicitly copy it from the live letter element to the cloned one.
+    // Remap the cloned letter to the export-only family names and explicitly
+    // copy font-variation-settings (often dropped by getComputedStyle iteration).
     const clonedLetter = clone.querySelector(".viewport-letter");
-    if (clonedLetter && letter && letter.style.fontVariationSettings) {
-      clonedLetter.style.fontVariationSettings = letter.style.fontVariationSettings;
+    if (clonedLetter && letter) {
+      const liveFamily = letter.style.fontFamily || getComputedStyle(letter).fontFamily;
+      const isA = liveFamily.includes("Character Creator A");
+      clonedLetter.style.fontFamily = isA
+        ? `"${EXPORT_FAMILY_A}"`
+        : `"${EXPORT_FAMILY}"`;
+      if (letter.style.fontVariationSettings) {
+        clonedLetter.style.fontVariationSettings = letter.style.fontVariationSettings;
+      }
     }
 
     // Inline the SVG age filter so url(#filter-letter-age) works inside foreignObject
@@ -2716,16 +2724,14 @@
     }
 
     // Use XMLSerializer on the clone for well-formed XHTML
-    // XMLSerializer will add xmlns="http://www.w3.org/1999/xhtml" automatically
     const serializer = new XMLSerializer();
     const cloneXhtml = serializer.serializeToString(clone);
 
-    // Build @font-face rules. Embed them inside the foreignObject HTML so they
-    // are in the correct document context — SVG <defs> styles don't reliably
-    // cascade into foreignObject for variable font axes.
+    // Embed @font-face rules inside the foreignObject HTML using the export-only
+    // family names. The base64 src means no external fetch is needed at render time.
     const fontFaceRules = [
-      fontUrl  ? `@font-face { font-family: "Character Creator";   src: url("${fontUrl}")  format("truetype"); font-weight: 400; font-style: normal; }` : "",
-      fontUrlA ? `@font-face { font-family: "Character Creator A"; src: url("${fontUrlA}") format("truetype"); font-weight: 400; font-style: normal; }` : "",
+      fontUrl  ? `@font-face { font-family: "${EXPORT_FAMILY}";   src: url("${fontUrl}")  format("truetype"); font-weight: 400; font-style: normal; }` : "",
+      fontUrlA ? `@font-face { font-family: "${EXPORT_FAMILY_A}"; src: url("${fontUrlA}") format("truetype"); font-weight: 400; font-style: normal; }` : "",
     ].filter(Boolean).join(" ");
     const fontStyleTag = fontFaceRules
       ? `<style xmlns="http://www.w3.org/1999/xhtml">${fontFaceRules}</style>`
