@@ -2698,17 +2698,22 @@
     const serializer = new XMLSerializer();
     const cloneXhtml = serializer.serializeToString(clone);
 
-    // Build SVG with embedded fonts and foreignObject
-    const fontFace = [
+    // Build @font-face rules. Embed them inside the foreignObject HTML so they
+    // are in the correct document context — SVG <defs> styles don't reliably
+    // cascade into foreignObject for variable font axes.
+    const fontFaceRules = [
       fontUrl  ? `@font-face { font-family: "Character Creator";   src: url("${fontUrl}")  format("truetype"); font-weight: 400; font-style: normal; }` : "",
       fontUrlA ? `@font-face { font-family: "Character Creator A"; src: url("${fontUrlA}") format("truetype"); font-weight: 400; font-style: normal; }` : "",
-    ].join(" ");
+    ].filter(Boolean).join(" ");
+    const fontStyleTag = fontFaceRules
+      ? `<style xmlns="http://www.w3.org/1999/xhtml">${fontFaceRules}</style>`
+      : "";
 
     const svgStr = [
       `<svg xmlns="http://www.w3.org/2000/svg" width="${w * scale}" height="${h * scale}">`,
-      `<defs><style>${fontFace}</style></defs>`,
       `<foreignObject x="0" y="0" width="${w}" height="${h}" transform="scale(${scale})">`,
       `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px;overflow:hidden;margin:0;">`,
+      fontStyleTag,
       filterXhtml,
       cloneXhtml,
       `</div>`,
