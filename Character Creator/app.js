@@ -2724,21 +2724,33 @@
     // Use data URI to avoid blob URL CORS/taint issues
     const svgDataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgStr);
 
+    // The SVG foreignObject approach fires img.onload before fonts embedded
+    // via base64 data URLs finish rendering (especially for fonts not already
+    // in the browser's cache). The double-load trick warms up the font on the
+    // first pass so the second pass draws with axes fully applied.
     return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = w * scale;
-        canvas.height = h * scale;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas);
+      const warmup = new Image();
+      warmup.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = w * scale;
+          canvas.height = h * scale;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas);
+        };
+        img.onerror = (e) => {
+          console.error("SVG image load failed (draw pass)", e);
+          reject(e);
+        };
+        img.src = svgDataUrl;
       };
-      img.onerror = (e) => {
-        console.error("SVG image load failed", e);
+      warmup.onerror = (e) => {
+        console.error("SVG image load failed (warmup pass)", e);
         reject(e);
       };
-      img.src = svgDataUrl;
+      warmup.src = svgDataUrl;
     });
   }
 
