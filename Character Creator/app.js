@@ -2605,20 +2605,32 @@
 
   /** Convert font file to base64 data URL (cached). */
   let _fontDataUrl = null;
-  async function getFontDataUrl() {
-    if (_fontDataUrl) return _fontDataUrl;
+  let _fontDataUrlA = null;
+
+  async function fetchFontDataUrl(path) {
     try {
-      const resp = await fetch("CharacterCreator/Variable-TT/CharacterCreatorV2-VF.ttf");
+      const resp = await fetch(path);
       const buf = await resp.arrayBuffer();
       const bytes = new Uint8Array(buf);
       let binary = "";
       for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-      _fontDataUrl = "data:font/truetype;base64," + btoa(binary);
-      return _fontDataUrl;
+      return "data:font/truetype;base64," + btoa(binary);
     } catch (e) {
-      console.error("Font fetch failed:", e);
+      console.error("Font fetch failed:", path, e);
       return null;
     }
+  }
+
+  async function getFontDataUrl() {
+    if (_fontDataUrl) return _fontDataUrl;
+    _fontDataUrl = await fetchFontDataUrl("CharacterCreator/Variable-TT/CharacterCreatorV2-VF.ttf");
+    return _fontDataUrl;
+  }
+
+  async function getFontDataUrlA() {
+    if (_fontDataUrlA) return _fontDataUrlA;
+    _fontDataUrlA = await fetchFontDataUrl("CharacterCreator/Variable-TT/CharacterCreatorV2-A.ttf");
+    return _fontDataUrlA;
   }
 
   /** Deep-clone a DOM element with all computed styles inlined. */
@@ -2649,7 +2661,7 @@
   /** Capture the main viewport frame as a canvas using foreignObject SVG. */
   async function captureViewportPng(snapW, snapH) {
     if (!frame) return null;
-    const fontUrl = await getFontDataUrl();
+    const [fontUrl, fontUrlA] = await Promise.all([getFontDataUrl(), getFontDataUrlA()]);
     const rect = frame.getBoundingClientRect();
     const w = snapW || Math.round(rect.width);
     const h = snapH || Math.round(rect.height);
@@ -2686,10 +2698,11 @@
     const serializer = new XMLSerializer();
     const cloneXhtml = serializer.serializeToString(clone);
 
-    // Build SVG with embedded font and foreignObject
-    const fontFace = fontUrl
-      ? `@font-face { font-family: "Character Creator"; src: url("${fontUrl}") format("truetype"); font-weight: 400; font-style: normal; }`
-      : "";
+    // Build SVG with embedded fonts and foreignObject
+    const fontFace = [
+      fontUrl  ? `@font-face { font-family: "Character Creator";   src: url("${fontUrl}")  format("truetype"); font-weight: 400; font-style: normal; }` : "",
+      fontUrlA ? `@font-face { font-family: "Character Creator A"; src: url("${fontUrlA}") format("truetype"); font-weight: 400; font-style: normal; }` : "",
+    ].join(" ");
 
     const svgStr = [
       `<svg xmlns="http://www.w3.org/2000/svg" width="${w * scale}" height="${h * scale}">`,
