@@ -2758,28 +2758,27 @@
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
-        // createImageBitmap forces full rasterisation (including embedded font
-        // loading) before its Promise resolves, unlike ctx.drawImage which can
-        // draw before variable-font axes have been applied inside the isolated
-        // SVG-as-image context.
-        createImageBitmap(img).then((bitmap) => {
-          const canvas = document.createElement("canvas");
-          canvas.width = w * scale;
-          canvas.height = h * scale;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(bitmap, 0, 0);
-          bitmap.close();
-          resolve(canvas);
-        }).catch((e) => {
-          // Fallback: draw directly if createImageBitmap isn't available/fails
-          console.warn("createImageBitmap failed, falling back:", e);
-          const canvas = document.createElement("canvas");
-          canvas.width = w * scale;
-          canvas.height = h * scale;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas);
-        });
+        // Wait 5 seconds after SVG load to allow variable font axes to fully
+        // render inside the isolated SVG-as-image context before drawing.
+        setTimeout(() => {
+          createImageBitmap(img).then((bitmap) => {
+            const canvas = document.createElement("canvas");
+            canvas.width = w * scale;
+            canvas.height = h * scale;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(bitmap, 0, 0);
+            bitmap.close();
+            resolve(canvas);
+          }).catch((e) => {
+            console.warn("createImageBitmap failed, falling back:", e);
+            const canvas = document.createElement("canvas");
+            canvas.width = w * scale;
+            canvas.height = h * scale;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas);
+          });
+        }, 5000);
       };
       img.onerror = (e) => {
         console.error("SVG image load failed", e);
