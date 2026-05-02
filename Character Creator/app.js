@@ -2664,6 +2664,13 @@
     clone.style.removeProperty("container-type");
     clone.style.removeProperty("container-name");
 
+    // font-variation-settings is often not enumerated by getComputedStyle iteration,
+    // so explicitly copy it from the live letter element to the cloned one.
+    const clonedLetter = clone.querySelector(".viewport-letter");
+    if (clonedLetter && letter && letter.style.fontVariationSettings) {
+      clonedLetter.style.fontVariationSettings = letter.style.fontVariationSettings;
+    }
+
     // Inline the SVG age filter so url(#filter-letter-age) works inside foreignObject
     const ageFilter = document.getElementById("filter-letter-age");
     let filterXhtml = "";
