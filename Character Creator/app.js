@@ -2727,8 +2727,10 @@
     const serializer = new XMLSerializer();
     const cloneXhtml = serializer.serializeToString(clone);
 
-    // Embed @font-face rules inside the foreignObject HTML using the export-only
-    // family names. The base64 src means no external fetch is needed at render time.
+    // Build @font-face rules with single-quoted axis-friendly format.
+    // Place them in BOTH the SVG <defs> and the foreignObject <style> so the
+    // isolated SVG-as-image renderer finds them regardless of which context it
+    // checks first.
     const fontFaceRules = [
       fontUrl  ? `@font-face { font-family: "${EXPORT_FAMILY}";   src: url("${fontUrl}")  format("truetype"); font-weight: 400; font-style: normal; }` : "",
       fontUrlA ? `@font-face { font-family: "${EXPORT_FAMILY_A}"; src: url("${fontUrlA}") format("truetype"); font-weight: 400; font-style: normal; }` : "",
@@ -2739,6 +2741,7 @@
 
     const svgStr = [
       `<svg xmlns="http://www.w3.org/2000/svg" width="${w * scale}" height="${h * scale}">`,
+      fontFaceRules ? `<defs><style>${fontFaceRules}</style></defs>` : "",
       `<foreignObject x="0" y="0" width="${w}" height="${h}" transform="scale(${scale})">`,
       `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px;overflow:hidden;margin:0;">`,
       fontStyleTag,
@@ -2755,12 +2758,28 @@
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = w * scale;
-        canvas.height = h * scale;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas);
+        // createImageBitmap forces full rasterisation (including embedded font
+        // loading) before its Promise resolves, unlike ctx.drawImage which can
+        // draw before variable-font axes have been applied inside the isolated
+        // SVG-as-image context.
+        createImageBitmap(img).then((bitmap) => {
+          const canvas = document.createElement("canvas");
+          canvas.width = w * scale;
+          canvas.height = h * scale;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(bitmap, 0, 0);
+          bitmap.close();
+          resolve(canvas);
+        }).catch((e) => {
+          // Fallback: draw directly if createImageBitmap isn't available/fails
+          console.warn("createImageBitmap failed, falling back:", e);
+          const canvas = document.createElement("canvas");
+          canvas.width = w * scale;
+          canvas.height = h * scale;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas);
+        });
       };
       img.onerror = (e) => {
         console.error("SVG image load failed", e);
