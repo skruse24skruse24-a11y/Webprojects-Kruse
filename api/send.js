@@ -40,11 +40,10 @@ module.exports = async function handler(req, res) {
       to: email,
       subject: `Your Character: ${safeGlyph}`,
       html: `
-        <p>Here is your character "<strong>${safeGlyph}</strong>" from Character Creator.</p>
-        <img src="cid:character-png" alt="Your character" style="max-width:600px; display:block; margin-top:16px;">
-        <p style="margin-top:24px; font-size:12px; color:#888;">
-          Created at <a href="${ALLOWED_ORIGIN}">webproject.samkrusedesign.com</a>
-        </p>
+        <p>This is your very own character!</p>
+        <img src="cid:character-png" alt="Your character" style="max-width:600px; display:block; margin-top:16px; margin-bottom:16px;">
+        <p>Enjoy,</p>
+        <p>Sam Kruse<br><a href="https://webproject.samkrusedesign.com">SamKruseDesign.com</a></p>
       `,
       attachments: [
         {
