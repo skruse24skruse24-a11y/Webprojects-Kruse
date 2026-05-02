@@ -2778,7 +2778,7 @@
             ctx.drawImage(img, 0, 0);
             resolve(canvas);
           });
-        }, 5000);
+        }, 1000);
       };
       img.onerror = (e) => {
         console.error("SVG image load failed", e);
