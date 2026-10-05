@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cult IVR</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <p><a href="../index.html">Home</a></p>
+
+  <h1>Cult IVR</h1>
+  <p>Browser preview of the phone menu tree. Press a number key or click an option.
+     This mirrors what a caller will hear once it is wired to a phone number.
+     See <code>TWILIO-SETUP.md</code> for the real phone setup.</p>
+
+  <hr>
+
+  <div id="screen">
+    <p id="prompt"></p>
+    <ul id="options"></ul>
+  </div>
+
+  <hr>
+
+  <p>
+    <button id="back" type="button">Back</button>
+    <button id="restart" type="button">Start over</button>
+  </p>
+
+  <p id="path"></p>
+
+  <script src="app.js"></script>
+</body>
+</html>
