@@ -279,3 +279,113 @@ Your TwiML generator then renders a record node as: `<Say>` (prompt) → `<Recor
 callbacks) → `<Say>` (confirm). Because the tree stays data-driven, you can sprinkle record
 nodes across as many branches as you like without changing the engine — just add nodes with
 `type: "record"`.
+
+---
+
+## 10. `<Dial>` (call forwarding) and `<Queue>` / `<Enqueue>` explained
+
+### `<Dial>` — forwarding a call to another number
+Yes — you can forward a caller to any real phone. `<Dial>` bridges the current caller to a new
+party and keeps both on the line until someone hangs up.
+
+```xml
+<Response>
+  <Say>Connecting you to the high priest. Please hold.</Say>
+  <Dial callerId="+15551112222">+15558675310</Dial>
+</Response>
+```
+
+Key points:
+- The forwarded party answers and the two are connected; when they hang up, the call ends
+  (or continues to `<Dial>`'s `action` URL if you set one).
+- **Caller ID:** by default the person you forward to sees the *original caller's* number. Set
+  `callerId` to a number you own to override what they see.
+- **The original caller must stay on the line** the whole time — forwarding bridges them, it
+  doesn't hand off and release.
+- **Nouns you can dial** (nest inside `<Dial>`):
+  - `<Number>` — a phone number (you can list up to **10** to ring them all at once;
+    first to answer wins — "simulring"). Each `<Number>` can have a `url` that plays a
+    "whisper"/screening message to the *answering* party before connecting.
+  - `<Sip>` — a SIP address. `<Client>` — a browser/app user. `<Conference>` — a room.
+    `<Queue>` — connect to a waiting caller (see below).
+- **Sequential forwarding** ("find me / follow me"): give `<Dial>` an `action` URL; after the
+  first attempt ends/fails, Twilio requests it and you return the next `<Dial>` to try the next
+  number in turn.
+- **Recording the bridged call:** `<Dial record="record-from-answer-dual">` records both legs
+  on separate channels, with a `recordingStatusCallback`.
+
+> Note: forwarding to a real phone adds the normal outbound per-minute cost for that leg on top
+> of the inbound call. (You said leaves won't be real phone calls — so `<Dial>` is optional and
+> mostly relevant if you ever want a "press 0 to reach a human" branch.)
+
+### `<Enqueue>` + `<Queue>` — how call queues actually work
+A queue is a two-sided mechanism:
+
+1. **Put a caller on hold** with `<Enqueue>` (names the queue; FIFO — first in, first out):
+   ```xml
+   <Response>
+     <Enqueue waitUrl="/wait">believers</Enqueue>
+   </Response>
+   ```
+   While waiting, the caller hears whatever the **`waitUrl`** returns — an MP3/WAV, or a TwiML
+   document. When that document runs out of verbs, Twilio **re-requests `waitUrl`**, which is
+   what loops the hold music indefinitely. If you omit `waitUrl`, Twilio plays a default
+   classical hold playlist.
+
+2. **Connect an agent to the first waiting caller** from a *separate* call, by dialing the
+   queue by name:
+   ```xml
+   <Response>
+     <Dial><Queue url="about-to-connect.xml">believers</Queue></Dial>
+   </Response>
+   ```
+   `<Queue>` pulls the first enqueued caller out and bridges them. Its optional `url` plays a
+   message to the waiting caller right before they're connected ("you're being connected...").
+
+**Announcing position / wait time:** each time Twilio requests your `waitUrl`, it includes
+parameters you can read and speak back:
+- `QueuePosition` — the caller's current spot in line.
+- `CurrentQueueSize` — how many callers are waiting.
+- `QueueTime` — seconds this caller has waited; `AvgQueueTime` — average wait.
+- `QueueSid`, `MaxQueueSize`.
+
+So a real position announcement looks like:
+```xml
+<Response>
+  <Say>You are number {{QueuePosition}} in line. Please continue to hold.</Say>
+  <Play>https://your-host.example.com/hold.mp3</Play>
+</Response>
+```
+
+**The catch:** a real `<Queue>` only moves callers forward when *something dequeues them* —
+i.e. a human agent (or TaskRouter) dialing the queue. With no agents, callers sit there
+forever, and `QueuePosition`/`CurrentQueueSize` reflect *reality* (usually "you are number 1"),
+which ruins any illusion of a crowd.
+
+### Faking a large queue — yes, use a recorded message (don't use a real queue)
+If the goal is theatrical ("you are caller number 47, estimated wait 25 minutes...") and no
+real agent is ever going to pick up, a **real queue is the wrong tool** — it would just report
+the true (tiny) numbers and strand the caller. Instead, fake it with a plain menu node:
+
+```xml
+<Response>
+  <Say voice="Polly.Joanna">
+    Thank you for your patience. You are currently number 47 in the queue.
+    Your estimated wait time is 25 minutes.
+  </Say>
+  <Play>https://your-host.example.com/hold.mp3</Play>   <!-- hold music / ambience -->
+  <Redirect>/next</Redirect>   <!-- then move them on to the real destination -->
+</Response>
+```
+
+Why the recorded/`<Say>` approach is better here:
+- **Full control of the illusion** — you pick the number ("47"), the wait time, and the vibe;
+  nothing has to be true.
+- **No agent required** — a real queue needs a dequeuer; this doesn't.
+- **Cheaper and simpler** — no queue resource, no second "agent" call, just TwiML + audio.
+- **You can randomize** — have your webhook inject a random/escalating position each call for
+  flavor (e.g. "number 47" one call, "number 112" the next).
+
+Use a **real** `<Enqueue>`/`<Queue>` only if you genuinely intend to connect callers to a live
+person. For a scripted "everyone is very busy, please hold" effect, a recorded message +
+`<Play>` hold audio is the right, cheap choice.
