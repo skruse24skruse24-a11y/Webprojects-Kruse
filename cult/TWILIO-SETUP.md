@@ -163,3 +163,119 @@ provider-agnostic JSON, and only migrate if volume makes per-minute cost signifi
 - **Reprompt on no input** — always include a `<Redirect>` after `<Gather>` so a caller who
   presses nothing hears the menu again instead of silence.
 - **Secrets stay server-side** — never put Twilio auth tokens in client-side code.
+
+---
+
+## 8. Full list of available functionalities (reference)
+
+A Twilio IVR is far more than "press 1". Everything below is available to mix into the tree.
+
+### Input — how a caller responds
+- **Keypad digits (DTMF)** — `<Gather numDigits="1">`, the classic "press 1".
+- **Speech recognition** — `<Gather input="speech">`: the caller can *say* "membership"
+  instead of pressing a key. Supports `hints`, `language`, and tunable `speechModel`.
+- **Both at once** — `<Gather input="dtmf speech">` accepts a press OR a spoken word.
+
+### Output — what the caller hears
+- **`<Say>`** — text-to-speech. Supports many languages and higher-quality **neural voices**
+  (e.g. `voice="Polly.Joanna-Generative"` or a Google Chirp voice) so it's not robotic.
+  `loop` repeats it.
+- **`<Play>`** — play your own recorded MP3/WAV prompt (see section 5).
+
+### Recording the caller (see section 9 for the deep dive)
+- **`<Record>`** — capture a prompted reply (voicemail style), optional transcription.
+- **`<Start><Recording>`** — record the whole call in the background while the menu continues.
+
+### Routing / connecting
+- **`<Dial>`** — connect the caller to a real phone number, a SIP address, or a browser/app
+  client. Features: call **screening** and **whisper** messages, **simulring** (ring several
+  numbers), sequential hunt, and recording both legs on separate channels (`record="record-from-answer-dual"`).
+- **`<Enqueue>` / `<Queue>` / `<Leave>`** — put callers in a hold queue with wait music and
+  position announcements.
+- **`<Conference>`** — multi-party calls.
+- **Flow control** — `<Hangup>`, `<Reject>` (decline without being billed), `<Pause>`,
+  `<Redirect>` (jump to another TwiML document).
+
+### Advanced / AI
+- **`<Connect>`** — stream the call's audio in real time to AI: natural-language **virtual
+  agents** (ConversationRelay / Dialogflow) so callers can just talk, or raw media **streams**
+  (websockets) for live transcription / custom AI.
+- **`<Pay>`** — PCI-compliant payment collection (Stripe, Braintree, CardConnect). Card data
+  routes directly to the processor and never touches your server.
+
+### Around the call
+- **SMS follow-up** — text the caller a link/summary after they choose an option (requires
+  A2P 10DLC registration).
+- **Caller data** — your webhook receives the caller's number, city/state, etc., so you can
+  route by area code or time of day. Business-hours logic lives in your webhook.
+- **Recordings & Transcription REST API**, **Studio** visual flow builder, and **Functions**
+  (serverless hosting) are all available.
+
+---
+
+## 9. Recording the caller's voice (deep dive)
+
+Two mechanisms, and the difference matters if you want recording in **most branches**:
+
+| | `<Record>` | `<Start><Recording>` |
+|---|---|---|
+| Records | The caller's prompted reply | The whole call's audio |
+| Blocking? | **Yes** — pauses the menu until they finish / hang up / press a key | **No** — the menu keeps going |
+| Channels | **Mono only** | Mono or **dual** (each party on its own channel) |
+| Best for | "Leave a message after the beep" branches | Logging / compliance across the whole call |
+| Transcription | `transcribe="true"` + `transcribeCallback` (clip ~2–120s) | via recording/transcription configs |
+
+### `<Record>` example (a "leave a message" branch)
+```xml
+<Response>
+  <Say>Leave your confession after the beep. Press pound when finished.</Say>
+  <Record
+    action="/after-recording"
+    recordingStatusCallback="/save-recording"
+    maxLength="60"
+    finishOnKey="#"
+    playBeep="true"
+    transcribe="true"
+    transcribeCallback="/save-transcript" />
+  <Say>We did not receive a recording. Goodbye.</Say>
+</Response>
+```
+When the recording is ready, Twilio POSTs to `recordingStatusCallback` with `RecordingUrl`,
+`RecordingDuration`, etc. The transcription (if enabled) arrives separately at
+`transcribeCallback`.
+
+### `<Start><Recording>` example (record the whole call, keep going)
+```xml
+<Response>
+  <Start>
+    <Recording channels="dual" recordingStatusCallback="/save-recording" />
+  </Start>
+  <Say>This call may be recorded.</Say>
+  <Gather numDigits="1" action="/menu"><Say>Press 1 for gatherings...</Say></Gather>
+</Response>
+```
+
+### Important caveats
+- **Consent / legal:** many jurisdictions require two-party consent. Announce "this call may
+  be recorded" and keep `playBeep="true"`. This is a legal requirement, not optional polish.
+- **Cost (small, but real):** recording ~$0.0025/min, storage ~$0.0005/min per month,
+  transcription ~$0.05/min. Fine at hobby scale; just know "record everything" isn't free.
+
+### Design pattern: recording in most branches
+Extend the menu tree with a new node type (alongside "menu" and "leaf") — call it a **record
+node**. Shape:
+
+```js
+confession: {
+  type: "record",
+  prompt: "Share your confession after the beep.", // spoken by <Say> or played via <Play>
+  maxLength: 60,        // seconds
+  transcribe: true,     // ask Twilio for a text transcript
+  action: "/save",      // webhook that stores RecordingUrl / transcript
+  confirm: "Your confession is received. Blessings."
+}
+```
+Your TwiML generator then renders a record node as: `<Say>` (prompt) → `<Record>` (with beep +
+callbacks) → `<Say>` (confirm). Because the tree stays data-driven, you can sprinkle record
+nodes across as many branches as you like without changing the engine — just add nodes with
+`type: "record"`.
